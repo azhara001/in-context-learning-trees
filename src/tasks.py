@@ -60,6 +60,7 @@ def get_task_sampler(
         "quadratic_regression": QuadraticRegression,
         "relu_2nn_regression": Relu2nnRegression,
         "decision_tree": DecisionTree,
+        "noisy_decision_tree" : NoisyDecisionTree
     }
     if task_name in task_names_to_classes:
         task_cls = task_names_to_classes[task_name]
@@ -275,7 +276,7 @@ class DecisionTree(Task):
 
         super(DecisionTree, self).__init__(n_dims, batch_size, pool_dict, seeds)
         self.depth = depth
-
+    
         if pool_dict is None:
 
             # We represent the tree using an array (tensor). Root node is at index 0, its 2 children at index 1 and 2...
@@ -290,7 +291,7 @@ class DecisionTree(Task):
             self.target_tensor = torch.randn(self.dt_tensor.shape)
         elif seeds is not None:
             self.dt_tensor = torch.zeros(batch_size, 2 ** (depth + 1) - 1)
-            self.target_tensor = torch.zeros_like(dt_tensor)
+            self.target_tensor = torch.zeros_like(self.dt_tensor)
             generator = torch.Generator()
             assert len(seeds) == self.b_size
             for i, seed in enumerate(seeds):
@@ -342,3 +343,15 @@ class DecisionTree(Task):
     @staticmethod
     def get_training_metric():
         return mean_squared_error
+    
+class NoisyDecisionTree(DecisionTree):
+
+    def __init__(self, n_dims, batch_size, pool_dict=None, seeds=None, depth=4,noise_std=0):
+        super(NoisyDecisionTree, self).__init__(n_dims, batch_size, pool_dict, seeds,depth)
+        self.noise_std = noise_std
+    
+    def evaluate(self,xs_b):
+        ys_b = super().evaluate(xs_b)
+        ys_b_noisy = ys_b + torch.randn_like(ys_b)*self.noise_std
+    
+    return ys_b_noisy

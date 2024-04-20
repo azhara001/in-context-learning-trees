@@ -13,7 +13,7 @@ from samplers import get_data_sampler
 from curriculum import Curriculum
 from schema import schema
 from models import build_model
-
+import pandas as pd
 import wandb
 
 torch.backends.cudnn.benchmark = True
@@ -62,6 +62,7 @@ def train(model, args):
     pbar = tqdm(range(starting_step, args.training.train_steps))
 
     num_training_examples = args.training.num_training_examples
+    losses = []
 
     for i in pbar:
         data_sampler_args = {}
@@ -87,6 +88,8 @@ def train(model, args):
         loss_func = task.get_training_metric()
 
         loss, output = train_step(model, xs.cuda(), ys.cuda(), optimizer, loss_func)
+        
+        losses.append(loss)
 
         point_wise_tags = list(range(curriculum.n_points))
         point_wise_loss_func = task.get_metric()
@@ -132,6 +135,10 @@ def train(model, args):
             and i > 0
         ):
             torch.save(model.state_dict(), os.path.join(args.out_dir, f"model_{i}.pt"))
+
+    losses_series = pd.Series(losses)  
+    losses_series.to_csv(os.path.join(args.out_dir, f"losses_model_{i}.csv"),index=False) # saving the losses
+    return None
 
 
 def main(args):
