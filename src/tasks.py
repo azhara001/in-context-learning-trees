@@ -352,9 +352,6 @@ class NoisyDecisionTree(DecisionTree):
     
     def evaluate(self,xs_b):
         ys_b = super().evaluate(xs_b)
-        print(f"ys_b before noise: {ys_b}")
         ys_b_noisy = ys_b + torch.randn_like(ys_b)*self.noise_std
-        print(f"ys_b after noise: {ys_b_noisy}")
-        
-        print(f'returning noisy gaussian labels with std: {self.noise_std}')
+        # print(f'returning noisy gaussian labels with std: {self.noise_std}')
         return ys_b_noisy
