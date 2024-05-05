@@ -3,8 +3,8 @@ inherit:
     - wandb.yaml
 
 model:
-    n_dims: 20
-    n_positions: 50
+    n_dims: 5
+    n_positions: 11
 
 training:
     task: noisy_decision_tree
