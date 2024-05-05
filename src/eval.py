@@ -25,7 +25,10 @@ def get_model_from_run(run_path, step=-1, only_conf=False):
 
     if step == -1:
         state_path = os.path.join(run_path, "state.pt")
-        state = torch.load(state_path)
+        if torch.cuda.is_available():
+            state = torch.load(state_path)
+        else:
+            state = torch.load(state_path,map_location=torch.device('cpu'))
         model.load_state_dict(state["model_state_dict"])
     else:
         model_path = os.path.join(run_path, f"model_{step}.pt")
@@ -41,7 +44,7 @@ def get_model_from_run(run_path, step=-1, only_conf=False):
 def eval_batch(model, task_sampler, xs, xs_p=None):
     task = task_sampler()
     if torch.cuda.is_available() and model.name.split("_")[0] in ["gpt2", "lstm"]:
-        device = "cuda"
+        device = "cuda" 
     else:
         device = "cpu"
 
@@ -209,7 +212,8 @@ def build_evals(conf):
     evaluation_kwargs = {}
 
     evaluation_kwargs["standard"] = {"prompting_strategy": "standard"}
-    if task_name != "linear_regression":
+    
+    if task_name != "linear_regression" and task_name != 'decision_tree':
         if task_name in ["relu_2nn_regression"]:
             evaluation_kwargs["linear_regression"] = {"task_name": "linear_regression"}
         for name, kwargs in evaluation_kwargs.items():
@@ -217,49 +221,56 @@ def build_evals(conf):
             evaluation_kwargs[name] = base_kwargs.copy()
             evaluation_kwargs[name].update(kwargs)
         return evaluation_kwargs
+    
+    else:
+        for strategy in [
+            "random_quadrants",
+            "orthogonal_train_test",
+            "overlapping_train_test",
+        ]:
+            evaluation_kwargs[strategy] = {"prompting_strategy": strategy}
 
-    for strategy in [
-        "random_quadrants",
-        "orthogonal_train_test",
-        "overlapping_train_test",
-    ]:
-        evaluation_kwargs[strategy] = {"prompting_strategy": strategy}
+        for method in ["half_subspace", "skewed"]:
+            if "subspace" in method:
+                eigenvals = torch.zeros(n_dims)
+                eigenvals[: n_dims // 2] = 1
+            else:
+                eigenvals = 1 / (torch.arange(n_dims) + 1)
 
-    for method in ["half_subspace", "skewed"]:
-        if "subspace" in method:
-            eigenvals = torch.zeros(n_dims)
-            eigenvals[: n_dims // 2] = 1
-        else:
-            eigenvals = 1 / (torch.arange(n_dims) + 1)
+            scale = sample_transformation(eigenvals, normalize=True)
+            evaluation_kwargs[f"{method}"] = {
+                "data_sampler_kwargs": {"scale": scale},
+            }
 
-        scale = sample_transformation(eigenvals, normalize=True)
-        evaluation_kwargs[f"{method}"] = {
-            "data_sampler_kwargs": {"scale": scale},
+        for dim in ["x", "y"]:
+            for scale in [0.333, 0.5, 2, 3]:
+                if dim == "x":
+                    eigenvals = scale * torch.ones(n_dims)
+                    t = sample_transformation(eigenvals)
+                    scaling_args = {"data_sampler_kwargs": {"scale": t}}
+                else:
+                    eigenvals = scale * torch.ones(n_dims)
+                    scaling_args = {"task_sampler_kwargs": {"scale": scale}}
+
+                evaluation_kwargs[f"scale-{dim}={scale}"] = scaling_args
+
+        evaluation_kwargs[f"noisyLR"] = {
+            "task_sampler_kwargs": {"renormalize_ys": True, "noise_std": 1},
+            "task_name": "noisy_linear_regression",
         }
 
-    for dim in ["x", "y"]:
-        for scale in [0.333, 0.5, 2, 3]:
-            if dim == "x":
-                eigenvals = scale * torch.ones(n_dims)
-                t = sample_transformation(eigenvals)
-                scaling_args = {"data_sampler_kwargs": {"scale": t}}
-            else:
-                eigenvals = scale * torch.ones(n_dims)
-                scaling_args = {"task_sampler_kwargs": {"scale": scale}}
-
-            evaluation_kwargs[f"scale-{dim}={scale}"] = scaling_args
-
-    evaluation_kwargs[f"noisyLR"] = {
-        "task_sampler_kwargs": {"renormalize_ys": True, "noise_std": 1},
-        "task_name": "noisy_linear_regression",
-    }
-
-    for name, kwargs in evaluation_kwargs.items():
-        # allow kwargs to override base_kwargs values
-        evaluation_kwargs[name] = base_kwargs.copy()
-        evaluation_kwargs[name].update(kwargs)
-
-    return evaluation_kwargs
+        for name, kwargs in evaluation_kwargs.items():
+            # allow kwargs to override base_kwargs values
+            evaluation_kwargs[name] = base_kwargs.copy()
+            evaluation_kwargs[name].update(kwargs)
+        
+        if task_name == 'decision_tree':
+            evaluation_dt = {}
+            for key in evaluation_kwargs.keys():
+                if key in ['standard','random_quadrants','overlapping_train_test']:
+                    evaluation_dt[key] = evaluation_kwargs[key]
+            return evaluation_dt
+        return evaluation_kwargs
 
 
 def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False):
@@ -270,10 +281,11 @@ def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False
         all_metrics = {}
 
     for eval_name, kwargs in tqdm(evaluation_kwargs.items()):
+        print(eval_name)
         metrics = {}
         if eval_name in all_metrics and not recompute:
             metrics = all_metrics[eval_name]
-        for model in all_models:
+        for model in tqdm(all_models):
             if model.name in metrics and not recompute:
                 continue
 
@@ -289,7 +301,7 @@ def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False
 
 def get_run_metrics(
     run_path, step=-1, cache=True, skip_model_load=False, skip_baselines=False
-):
+,skip_recompute=False):
     if skip_model_load:
         _, conf = get_model_from_run(run_path, only_conf=True)
         all_models = []
@@ -309,11 +321,14 @@ def get_run_metrics(
         save_path = os.path.join(run_path, f"metrics_{step}.json")
 
     recompute = False
-    if save_path is not None and os.path.exists(save_path):
-        checkpoint_created = os.path.getmtime(run_path)
-        cache_created = os.path.getmtime(save_path)
-        if checkpoint_created > cache_created:
-            recompute = True
+    if skip_recompute:
+        recompute = False
+    else:
+        if save_path is not None and os.path.exists(save_path):
+            checkpoint_created = os.path.getmtime(run_path)
+            cache_created = os.path.getmtime(save_path)
+            if checkpoint_created > cache_created:
+                recompute = True
 
     all_metrics = compute_evals(all_models, evaluation_kwargs, save_path, recompute)
     return all_metrics
@@ -354,8 +369,12 @@ def baseline_names(name):
 def read_run_dir(run_dir):
     all_runs = {}
     for task in os.listdir(run_dir):
+        if task == '.DS_Store': # ignoring .DS_Store files
+            continue
         task_dir = os.path.join(run_dir, task)
         for run_id in os.listdir(task_dir):
+            if run_id == '.DS_Store': # ignoring .DS_Store files
+                continue
             run_path = os.path.join(task_dir, run_id)
             _, conf = get_model_from_run(run_path, only_conf=True)
             params = {}

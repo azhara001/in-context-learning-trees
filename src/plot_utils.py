@@ -24,12 +24,20 @@ relevant_model_names = {
         "Averaging",
         "Lasso (alpha=0.01)",
     ],
+    # "decision_tree": [
+    #     "Transformer",
+    #     "3-Nearest Neighbors",
+    #     "2-layer NN, GD",
+    #     "Greedy Tree Learning",
+    #     "XGBoost",
+    # ],
     "decision_tree": [
         "Transformer",
+        "Least Squares",
         "3-Nearest Neighbors",
-        "2-layer NN, GD",
         "Greedy Tree Learning",
         "XGBoost",
+        "Averaging",
     ],
     "relu_2nn_regression": [
         "Transformer",
@@ -57,7 +65,7 @@ def basic_plot(metrics, models=None, trivial=1.0):
     ax.set_xlabel("in-context examples")
     ax.set_ylabel("squared error")
     ax.set_xlim(-1, len(low) + 0.1)
-    ax.set_ylim(-0.1, 1.25)
+    ax.set_ylim(-0.1, 5.0)
 
     legend = ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
     fig.set_size_inches(4, 3)
@@ -73,11 +81,12 @@ def collect_results(run_dir, df, valid_row=None, rename_eval=None, rename_model=
         if valid_row is not None and not valid_row(r):
             continue
 
-        run_path = os.path.join(run_dir, r.task, r.run_id)
+        run_path = os.path.join(run_dir, r.task, r.run_id) #../models/decision_tree/pretrained
         _, conf = get_model_from_run(run_path, only_conf=True)
-
         print(r.run_name, r.run_id)
-        metrics = get_run_metrics(run_path, skip_model_load=True)
+        
+
+        metrics = get_run_metrics(run_path, skip_model_load=True,skip_recompute=True)
 
         for eval_name, results in sorted(metrics.items()):
             processed_results = {}

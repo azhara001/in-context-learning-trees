@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import GPT2Model, GPT2Config
+from transformers import GPT2Model, GPT2Config, GPT2Tokenizer, GPT2LMHeadModel, AutoConfig
 from tqdm import tqdm
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression, Lasso
@@ -24,7 +24,6 @@ def build_model(conf):
         raise NotImplementedError
 
     return model
-
 
 def get_relevant_baselines(task_name):
     task_to_baselines = {
@@ -70,6 +69,15 @@ def get_relevant_baselines(task_name):
             (DecisionTreeModel, {"max_depth": None}),
             (XGBoostModel, {}),
             (AveragingModel, {}),
+        ],
+        "decision_tree_toy": [
+            (LeastSquaresModel, {}),
+            (NNModel, {"n_neighbors": 3}),
+            (DecisionTreeModel, {"max_depth": 4}),
+            (DecisionTreeModel, {"max_depth": None}),
+            (XGBoostModel, {}),
+            (AveragingModel, {}),
+            ### ADD THE GPT2 PRETRAINED CLASS REFERENCE HERE
         ],
     }
 
@@ -126,6 +134,50 @@ class TransformerModel(nn.Module):
         prediction = self._read_out(output)
         return prediction[:, ::2, 0][:, inds]  # predict only on xs
 
+# class GPT2_Pretrained:
+#     def __init__(self):
+#         self.name = f"gpt2_pretrained" 
+#         self.model = GPT2Model.from_pretrained('gpt2')
+#         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+
+#     @staticmethod
+#     def _combine(xs_b, ys_b):
+#         """Interleaves the x's and the y's into a single sequence."""
+#         bsize, points, dim = xs_b.shape
+#         ys_b_wide = torch.cat(
+#             (
+#                 ys_b.view(bsize, points, 1),
+#                 torch.zeros(bsize, points, dim - 1, device=ys_b.device),
+#             ),
+#             axis=2,
+#         )
+#         zs = torch.stack((xs_b, ys_b_wide), dim=2)
+#         zs = zs.view(bsize, 2 * points, dim)
+#         return zs
+
+#     def forward(self, xs, ys, inds=None):
+#         if inds is None:
+#             inds = torch.arange(ys.shape[1])
+#         else:
+#             inds = torch.tensor(inds)
+#             if max(inds) >= ys.shape[1] or min(inds) < 0:
+#                 raise ValueError("inds contain indices where xs and ys are not defined")
+#         zs = self._combine(xs, ys)
+#         #embeds = self._read_in(zs)
+#         #output = self._backbone(inputs_embeds=embeds).last_hidden_state
+#         #prediction = self._read_out(output)
+#         # input_ids = self.tokenizer(zs, return_tensor="pt").input_ids
+#         # gen_tokens = model.generate(
+#         #     input_ids,
+#         #     do_sample=True,
+#         #     temperature = 0.9,
+#         #     max_length = 100
+#         # )
+#         # prediction = tokenizer.batch_decode(gen_tokens)[0]
+        
+#         #return prediction[:, ::2, 0][:, inds]  # predict only on xs
+
+        
 
 class NNModel:
     def __init__(self, n_neighbors, weights="uniform"):
@@ -333,7 +385,7 @@ class GDModel:
         preds = []  # predict one for first point
 
         # i: loop over num_points
-        for i in tqdm(inds):
+        for i in inds:
             pred = torch.zeros_like(ys[:, 0])
             model = ParallelNetworks(
                 ys.shape[0], self.model_class, **self.model_class_args
@@ -458,7 +510,7 @@ class XGBoostModel:
 
         # i: loop over num_points
         # j: loop over bsize
-        for i in tqdm(inds):
+        for i in inds:
             pred = torch.zeros_like(ys[:, 0])
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
@@ -475,3 +527,4 @@ class XGBoostModel:
             preds.append(pred)
 
         return torch.stack(preds, dim=1)
+
