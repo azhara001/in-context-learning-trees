@@ -27,7 +27,7 @@ training:
             inc: 2
             interval: 1000
 
-out_dir: ../models/noisy_decision_tree_std_1
+out_dir: ../models/noisy_decision_tree_std_3
 
 wandb:
     name: "noisy_decision_tree_std_1_depth_4"

@@ -213,7 +213,7 @@ def build_evals(conf):
 
     evaluation_kwargs["standard"] = {"prompting_strategy": "standard"}
     
-    if task_name != "linear_regression" and task_name != 'decision_tree':
+    if task_name != "linear_regression" and task_name != 'decision_tree' and task_name != 'noisy_decision_tree':
         if task_name in ["relu_2nn_regression"]:
             evaluation_kwargs["linear_regression"] = {"task_name": "linear_regression"}
         for name, kwargs in evaluation_kwargs.items():
@@ -264,7 +264,7 @@ def build_evals(conf):
             evaluation_kwargs[name] = base_kwargs.copy()
             evaluation_kwargs[name].update(kwargs)
         
-        if task_name == 'decision_tree':
+        if task_name == 'decision_tree' or task_name == 'noisy_decision_tree':
             evaluation_dt = {}
             for key in evaluation_kwargs.keys():
                 if key in ['standard','random_quadrants','overlapping_train_test']:

@@ -70,7 +70,7 @@ def get_relevant_baselines(task_name):
             (XGBoostModel, {}),
             (AveragingModel, {}),
         ],
-        "decision_tree_toy": [
+        "noisy_decision_tree": [
             (LeastSquaresModel, {}),
             (NNModel, {"n_neighbors": 3}),
             (DecisionTreeModel, {"max_depth": 4}),
