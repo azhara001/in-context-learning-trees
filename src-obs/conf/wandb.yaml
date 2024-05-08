@@ -1,0 +1,5 @@
+wandb:
+    project: in-context-learning
+    entity: azhara001
+    notes:
+    log_every_steps: 100

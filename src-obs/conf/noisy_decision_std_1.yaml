@@ -9,7 +9,7 @@ model:
 training:
     task: noisy_decision_tree
     data: gaussian
-    task_kwargs: {"depth":4, "noise_std": 3}
+    task_kwargs: {"depth":4, "noise_std": 1}
     batch_size: 64
     learning_rate: 0.0001
     save_every_steps: 1000
@@ -27,7 +27,7 @@ training:
             inc: 2
             interval: 1000
 
-out_dir: ../models/noisy_decision_tree_std_3
+out_dir: ../models/noisy_decision_tree_std_1
 
 wandb:
     name: "noisy_decision_tree_std_1_depth_4"
