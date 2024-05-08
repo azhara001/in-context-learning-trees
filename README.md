@@ -1,5 +1,5 @@
 This repository contains the code and models for the following project:
-Adapting to Context: A Case Study on In-Context Learning of Decision Tree Algorithms by Large Language Models as a part of the final project for INFO 259: Natural Language Processing at UC Berkeley 
+**Adapting to Context: A Case Study on In-Context Learning of Decision Tree Algorithms by Large Language Models** as a part of the final project for [INFO 259: Natural Language Processing](https://ucbnlp24.github.io/webpage/) at UC Berkeley 
 
 
 ```python
