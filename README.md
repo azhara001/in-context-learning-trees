@@ -14,5 +14,23 @@ conda env create -f environment.yml
 conda activate in-context-learning
 ```
 
-2. Download the 
+2. Download the [model checkpoints](https://drive.google.com/drive/folders/1bbA8X_SePC74Nuxu3aDmHwp7coyoo4nn?usp=sharing) and extract them in the current directory.
+
+```
+wget https://github.com/dtsip/in-context-learning/releases/download/initial/models.zip
+unzip models.zip
+```
+
+3. [Optional] If you plan to train, populate ```conf/wandb.yaml``` with your wandb info.
+
+The ```eval.ipynb``` inlcudes the results of the following prompting strategies on decision tree algorithm inference using a GPT2 Config Model
+1. Standard prompting - noise free training (checkpoints extracted from [forked repo](https://github.com/dtsip/in-context-learning)
+2. Random Quadrant prompting - noise free training (checkpoints extracted from [forked repo](https://github.com/dtsip/in-context-learning)
+3. Train-Test overlapping prompting - noise free training (checkpoints extracted from [forked repo](https://github.com/dtsip/in-context-learning)
+4. Noisy label training on decision tree algorithms with the following isotropic gaussian noise on the labels:
+    - Standard deviation 0
+    - Standard deviation 0.05
+    - Standard deviation 1
+    - Standard deviation 3
+  Note: for the following noisy training regime, refer to the custom conf/.. .yaml files in the src directory
 
