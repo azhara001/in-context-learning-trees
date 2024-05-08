@@ -3,9 +3,9 @@ Adapting to Context: A Case Study on In-Context Learning of Decision Tree Algori
 
 
 ```python
-conda env create -f environment.yml` <br>
+conda env create -f environment.yml
 conda activate in-context-learning
-```python
+
 
 
 Forked From: 
