@@ -30,4 +30,4 @@ training:
 out_dir: ../models/noisy_decision_tree
 
 wandb:
-    name: "noisy_decision_tree_std_1_depth_4"
+    name: "noisy_decision_tree_std_0"

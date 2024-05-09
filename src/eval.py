@@ -22,10 +22,11 @@ def get_model_from_run(run_path, step=-1, only_conf=False):
         return None, conf
 
     model = models.build_model(conf.model)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     if step == -1:
         state_path = os.path.join(run_path, "state.pt")
-        if torch.cuda.is_available():
+        if device == 'cuda':
             state = torch.load(state_path)
         else:
             state = torch.load(state_path,map_location=torch.device('cpu'))
@@ -279,10 +280,11 @@ def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False
             all_metrics = json.load(fp)
     except Exception:
         all_metrics = {}
-
+    print(f"recompute: {recompute}")
     for eval_name, kwargs in tqdm(evaluation_kwargs.items()):
         print(eval_name)
         metrics = {}
+        
         if eval_name in all_metrics and not recompute:
             metrics = all_metrics[eval_name]
         for model in tqdm(all_models):
@@ -302,12 +304,18 @@ def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False
 def get_run_metrics(
     run_path, step=-1, cache=True, skip_model_load=False, skip_baselines=False
 ,skip_recompute=False):
+    
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     if skip_model_load:
         _, conf = get_model_from_run(run_path, only_conf=True)
         all_models = []
     else:
         model, conf = get_model_from_run(run_path, step)
-        model = model.cuda().eval()
+        if device == 'cuda':
+            model = model.cuda().eval()
+        else:
+            model = model.eval()
         all_models = [model]
         if not skip_baselines:
             all_models += models.get_relevant_baselines(conf.training.task)
@@ -376,6 +384,7 @@ def read_run_dir(run_dir):
             if run_id == '.DS_Store': # ignoring .DS_Store files
                 continue
             run_path = os.path.join(task_dir, run_id)
+            #print(f'run_path: {run_path}')
             _, conf = get_model_from_run(run_path, only_conf=True)
             params = {}
             params["run_id"] = run_id

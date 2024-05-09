@@ -24,13 +24,6 @@ relevant_model_names = {
         "Averaging",
         "Lasso (alpha=0.01)",
     ],
-    # "decision_tree": [
-    #     "Transformer",
-    #     "3-Nearest Neighbors",
-    #     "2-layer NN, GD",
-    #     "Greedy Tree Learning",
-    #     "XGBoost",
-    # ],
     "decision_tree": [
         "Transformer",
         "Least Squares",
@@ -39,7 +32,31 @@ relevant_model_names = {
         "XGBoost",
         "Averaging",
     ],
-        "noisy_decision_tree": [
+    "noisy_decision_tree_std_0": [
+        "Transformer",
+        "Least Squares",
+        "3-Nearest Neighbors",
+        "Greedy Tree Learning",
+        "XGBoost",
+        "Averaging",
+    ],
+    "noisy_decision_tree_std_0.05": [
+        "Transformer",
+        "Least Squares",
+        "3-Nearest Neighbors",
+        "Greedy Tree Learning",
+        "XGBoost",
+        "Averaging",
+    ],
+    "noisy_decision_tree_std_1": [
+        "Transformer",
+        "Least Squares",
+        "3-Nearest Neighbors",
+        "Greedy Tree Learning",
+        "XGBoost",
+        "Averaging",
+    ],
+    "noisy_decision_tree_std_3": [
         "Transformer",
         "Least Squares",
         "3-Nearest Neighbors",
