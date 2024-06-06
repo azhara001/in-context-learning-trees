@@ -17,7 +17,7 @@ conda activate in-context-learning
 2. Download the [model checkpoints](https://drive.google.com/drive/folders/1bbA8X_SePC74Nuxu3aDmHwp7coyoo4nn?usp=sharing) and extract them in the current directory.
 
 ```
-wget https://github.com/dtsip/in-context-learning/releases/download/initial/models.zip
+wget https://drive.google.com/drive/folders/1bbA8X_SePC74Nuxu3aDmHwp7coyoo4nn?usp=drive_link.zip
 unzip models.zip
 ```
 
